@@ -76,6 +76,12 @@ const en = {
   'Display card checkbox': 'Display card checkbox',
   'When toggled, a checkbox will be displayed with each card':
     'When toggled, a checkbox will be displayed with each card',
+  'Reveal card checkbox on mouse hover': 'Reveal card checkbox on mouse hover',
+  'When toggled, card checkboxes will be hidden until the card is hovered.':
+    'When toggled, card checkboxes will be hidden until the card is hovered.',
+  'Auto-archive completed': 'Auto-archive completed',
+  'When toggled, cards will be archived as soon as their checkbox is checked.':
+    'When toggled, cards will be archived as soon as their checkbox is checked.',
   'Reset to default': 'Reset to default',
   'Date & Time': 'Date & Time',
   'Date trigger': 'Date trigger',

@@ -25,11 +25,15 @@ export const ItemCheckbox = memo(function ItemCheckbox({
   boardModifiers,
 }: ItemCheckboxProps) {
   const shouldShowCheckbox = stateManager.useSetting('show-checkboxes');
+  const shouldShowCheckboxOnHover = stateManager.useSetting('show-checkboxes-on-hover');
+  const shouldAutoArchiveCompleted = stateManager.useSetting('auto-archive-completed');
 
   const [isCtrlHoveringCheckbox, setIsCtrlHoveringCheckbox] = useState(false);
   const [isHoveringCheckbox, setIsHoveringCheckbox] = useState(false);
 
   const onCheckboxChange = useCallback(() => {
+    const shouldArchiveAfterComplete = shouldAutoArchiveCompleted && !item.data.checked;
+
     const updates = toggleTask(item, stateManager.file);
     if (updates) {
       const [itemStrings, checkChars, thisIndex] = updates;
@@ -40,6 +44,12 @@ export const ItemCheckbox = memo(function ItemCheckbox({
       });
 
       boardModifiers.replaceItem(path, replacements);
+
+      if (shouldArchiveAfterComplete) {
+        const archivePath = [...path];
+        archivePath[archivePath.length - 1] = archivePath[archivePath.length - 1] + thisIndex;
+        boardModifiers.archiveItem(archivePath);
+      }
     } else {
       boardModifiers.updateItem(
         path,
@@ -54,8 +64,12 @@ export const ItemCheckbox = memo(function ItemCheckbox({
           },
         })
       );
+
+      if (shouldArchiveAfterComplete) {
+        boardModifiers.archiveItem(path);
+      }
     }
-  }, [item, stateManager, boardModifiers, ...path]);
+  }, [item, shouldAutoArchiveCompleted, stateManager, boardModifiers, ...path]);
 
   useEffect(() => {
     if (isHoveringCheckbox) {
@@ -97,7 +111,9 @@ export const ItemCheckbox = memo(function ItemCheckbox({
           setIsCtrlHoveringCheckbox(false);
         }
       }}
-      className={c('item-prefix-button-wrapper')}
+      className={`${c('item-prefix-button-wrapper')} ${
+        shouldShowCheckboxOnHover ? 'is-revealed-on-card-hover' : ''
+      }`}
     >
       {shouldShowCheckbox && !isCtrlHoveringCheckbox && (
         <input

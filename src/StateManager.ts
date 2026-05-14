@@ -254,6 +254,10 @@ export class StateManager {
       'show-board-settings': this.getSettingRaw('show-board-settings', suppliedSettings) ?? true,
       'show-search': this.getSettingRaw('show-search', suppliedSettings) ?? true,
       'show-set-view': this.getSettingRaw('show-set-view', suppliedSettings) ?? true,
+      'show-checkboxes-on-hover':
+        this.getSettingRaw('show-checkboxes-on-hover', suppliedSettings) ?? false,
+      'auto-archive-completed':
+        this.getSettingRaw('auto-archive-completed', suppliedSettings) ?? false,
       'tag-colors': this.getSettingRaw('tag-colors', suppliedSettings) ?? [],
       'tag-sort': this.getSettingRaw('tag-sort', suppliedSettings) ?? [],
       'date-colors': this.getSettingRaw('date-colors', suppliedSettings) ?? [],

@@ -55,6 +55,7 @@ export interface KanbanSettings {
   'archive-date-format'?: string;
   'archive-date-separator'?: string;
   'archive-with-date'?: boolean;
+  'auto-archive-completed'?: boolean;
   'date-colors'?: DateColor[];
   'date-display-format'?: string;
   'date-format'?: string;
@@ -80,6 +81,7 @@ export interface KanbanSettings {
   'show-archive-all'?: boolean;
   'show-board-settings'?: boolean;
   'show-checkboxes'?: boolean;
+  'show-checkboxes-on-hover'?: boolean;
   'show-relative-date'?: boolean;
   'show-search'?: boolean;
   'show-set-view'?: boolean;
@@ -103,6 +105,7 @@ export const settingKeyLookup: Set<keyof KanbanSettings> = new Set([
   'archive-date-format',
   'archive-date-separator',
   'archive-with-date',
+  'auto-archive-completed',
   'date-colors',
   'date-display-format',
   'date-format',
@@ -128,6 +131,7 @@ export const settingKeyLookup: Set<keyof KanbanSettings> = new Set([
   'show-archive-all',
   'show-board-settings',
   'show-checkboxes',
+  'show-checkboxes-on-hover',
   'show-relative-date',
   'show-search',
   'show-set-view',
@@ -242,6 +246,86 @@ export class SettingsManager {
 
                 this.applySettingsUpdate({
                   $unset: ['show-checkboxes'],
+                });
+              });
+          });
+      });
+
+    new Setting(contentEl)
+      .setName(t('Reveal card checkbox on mouse hover'))
+      .setDesc(t('When toggled, card checkboxes will be hidden until the card is hovered.'))
+      .then((setting) => {
+        let toggleComponent: ToggleComponent;
+
+        setting
+          .addToggle((toggle) => {
+            toggleComponent = toggle;
+
+            const [value, globalValue] = this.getSetting('show-checkboxes-on-hover', local);
+
+            if (value !== undefined) {
+              toggle.setValue(value as boolean);
+            } else if (globalValue !== undefined) {
+              toggle.setValue(globalValue as boolean);
+            }
+
+            toggle.onChange((newValue) => {
+              this.applySettingsUpdate({
+                'show-checkboxes-on-hover': {
+                  $set: newValue,
+                },
+              });
+            });
+          })
+          .addExtraButton((b) => {
+            b.setIcon('lucide-rotate-ccw')
+              .setTooltip(t('Reset to default'))
+              .onClick(() => {
+                const [, globalValue] = this.getSetting('show-checkboxes-on-hover', local);
+                toggleComponent.setValue(!!globalValue);
+
+                this.applySettingsUpdate({
+                  $unset: ['show-checkboxes-on-hover'],
+                });
+              });
+          });
+      });
+
+    new Setting(contentEl)
+      .setName(t('Auto-archive completed'))
+      .setDesc(t('When toggled, cards will be archived as soon as their checkbox is checked.'))
+      .then((setting) => {
+        let toggleComponent: ToggleComponent;
+
+        setting
+          .addToggle((toggle) => {
+            toggleComponent = toggle;
+
+            const [value, globalValue] = this.getSetting('auto-archive-completed', local);
+
+            if (value !== undefined) {
+              toggle.setValue(value as boolean);
+            } else if (globalValue !== undefined) {
+              toggle.setValue(globalValue as boolean);
+            }
+
+            toggle.onChange((newValue) => {
+              this.applySettingsUpdate({
+                'auto-archive-completed': {
+                  $set: newValue,
+                },
+              });
+            });
+          })
+          .addExtraButton((b) => {
+            b.setIcon('lucide-rotate-ccw')
+              .setTooltip(t('Reset to default'))
+              .onClick(() => {
+                const [, globalValue] = this.getSetting('auto-archive-completed', local);
+                toggleComponent.setValue(!!globalValue);
+
+                this.applySettingsUpdate({
+                  $unset: ['auto-archive-completed'],
                 });
               });
           });

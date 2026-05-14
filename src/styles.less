@@ -986,6 +986,18 @@ button.kanban-plugin__new-item-button {
   }
 }
 
+.kanban-plugin__item-prefix-button-wrapper.is-revealed-on-card-hover input[type='checkbox'] {
+  opacity: 0;
+  transition: opacity 120ms ease-in-out;
+}
+
+.kanban-plugin__item:hover
+  .kanban-plugin__item-prefix-button-wrapper.is-revealed-on-card-hover
+  input[type='checkbox'],
+.kanban-plugin__item-prefix-button-wrapper.is-revealed-on-card-hover input[type='checkbox']:focus {
+  opacity: 1;
+}
+
 button.kanban-plugin__item-postfix-button {
   visibility: hidden;
   opacity: 0;
