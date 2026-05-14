@@ -490,6 +490,14 @@ export default class KanbanPlugin extends Plugin {
               )
               .addItem((item) =>
                 item
+                  .setTitle(t('View as stacks'))
+                  .setSection('pane')
+                  .setIcon('lucide-columns-3')
+                  .setChecked(boardView === 'stacks')
+                  .onClick(() => kanbanView.setView('stacks'))
+              )
+              .addItem((item) =>
+                item
                   .setTitle(t('View as table'))
                   .setSection('pane')
                   .setIcon('lucide-table')
@@ -689,6 +697,22 @@ export default class KanbanPlugin extends Plugin {
 
         if (view && view instanceof KanbanView) {
           view.setView('table');
+        }
+      },
+    });
+
+    this.addCommand({
+      id: 'view-stacks',
+      name: t('View as stacks'),
+      checkCallback: (checking) => {
+        const view = app.workspace.getActiveViewOfType(KanbanView);
+
+        if (checking) {
+          return view && view instanceof KanbanView;
+        }
+
+        if (view && view instanceof KanbanView) {
+          view.setView('stacks');
         }
       },
     });

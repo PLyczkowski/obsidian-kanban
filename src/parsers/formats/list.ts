@@ -38,6 +38,7 @@ import {
   indentNewLines,
   markRangeForDeletion,
   parseCanvasColor,
+  parseLaneStack,
   parseLaneTitle,
   removeBlockId,
   replaceBrs,
@@ -247,21 +248,42 @@ function getLaneColor(child: Content) {
   return parseCanvasColor(match[1]);
 }
 
-function getLaneColorAfterHeading(children: Content[], currentIndex: number) {
+function getLaneStack(child: Content) {
+  if (child.type !== 'paragraph' && child.type !== 'html') return null;
+
+  const match = toString(child).match(/^%%\s*kanban:stack:\s*([^%]+?)\s*%%$/);
+  if (!match) return null;
+
+  return parseLaneStack(match[1]);
+}
+
+function getLaneMetadataAfterHeading(children: Content[], currentIndex: number) {
+  let color = null;
+  let stack = null;
+
   for (let i = currentIndex + 1, len = children.length; i < len; i++) {
     const child = children[i];
 
-    if (child.type === 'heading' || child.type === 'list') return null;
+    if (child.type === 'heading' || child.type === 'list') return { color, stack };
 
-    const color = getLaneColor(child);
-    if (color) return color;
+    const laneColor = getLaneColor(child);
+    if (laneColor) {
+      color = laneColor;
+      continue;
+    }
+
+    const laneStack = getLaneStack(child);
+    if (laneStack) {
+      stack = laneStack;
+      continue;
+    }
 
     if (child.type === 'paragraph' && toString(child) === t('Complete')) continue;
 
-    return null;
+    return { color, stack };
   }
 
-  return null;
+  return { color, stack };
 }
 
 export function astToUnhydratedBoard(
@@ -278,14 +300,14 @@ export function astToUnhydratedBoard(
       const isArchive = isArchiveLane(child, root.children, index);
       const headingBoundary = getNodeContentBoundary(child as Parent);
       const title = getStringFromBoundary(md, headingBoundary);
-      const color = getLaneColorAfterHeading(root.children, index);
+      const { color, stack } = getLaneMetadataAfterHeading(root.children, index);
 
       let shouldMarkItemsComplete = false;
 
       const list = getNextOfType(root.children, index, 'list', (child) => {
         if (child.type === 'heading') return false;
 
-        if (getLaneColor(child)) return true;
+        if (getLaneColor(child) || getLaneStack(child)) return true;
 
         if (child.type === 'paragraph') {
           const childStr = toString(child);
@@ -325,6 +347,7 @@ export function astToUnhydratedBoard(
           data: {
             ...parseLaneTitle(title),
             color,
+            stack,
             shouldMarkItemsComplete,
           },
         });
@@ -343,6 +366,7 @@ export function astToUnhydratedBoard(
           data: {
             ...parseLaneTitle(title),
             color,
+            stack,
             shouldMarkItemsComplete,
           },
         });
@@ -436,7 +460,7 @@ function itemToMd(item: Item) {
   return `- [${item.data.checkChar}] ${addBlockId(indentNewLines(item.data.titleRaw), item)}`;
 }
 
-function laneToMd(lane: Lane) {
+function laneToMd(lane: Lane, sharedStacks: Set<string>) {
   const lines: string[] = [];
 
   lines.push(`## ${replaceNewLines(laneTitleWithMaxItems(lane.data.title, lane.data.maxItems))}`);
@@ -445,6 +469,11 @@ function laneToMd(lane: Lane) {
 
   if (lane.data.color) {
     lines.push(`%% kanban:color: ${lane.data.color} %%`);
+    lines.push('');
+  }
+
+  if (lane.data.stack && sharedStacks.has(lane.data.stack)) {
+    lines.push(`%% kanban:stack: ${lane.data.stack} %%`);
     lines.push('');
   }
 
@@ -478,8 +507,20 @@ function archiveToMd(archive: Item[]) {
 }
 
 export function boardToMd(board: Board) {
+  const stackCounts = board.children.reduce((counts, lane) => {
+    if (lane.data.stack) {
+      counts.set(lane.data.stack, (counts.get(lane.data.stack) || 0) + 1);
+    }
+
+    return counts;
+  }, new Map<string, number>());
+  const sharedStacks = new Set(
+    Array.from(stackCounts.entries())
+      .filter(([, count]) => count > 1)
+      .map(([stack]) => stack)
+  );
   const lanes = board.children.reduce((md, lane) => {
-    return md + laneToMd(lane);
+    return md + laneToMd(lane, sharedStacks);
   }, '');
 
   const frontmatter = ['---', '', stringifyYaml(board.data.frontmatter), '---', '', ''].join('\n');

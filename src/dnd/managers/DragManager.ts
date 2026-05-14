@@ -309,9 +309,21 @@ export class DragManager {
     hitboxes: Hitbox[],
     hitboxEntities: Entity[]
   ) {
-    const hits: Entity[] = boxIntersect([dragHitbox], hitboxes).map(
-      (match) => hitboxEntities[match[1]]
-    );
+    const pointerHits = hitboxEntities.filter((entity) => {
+      if (!entity.getData().stackDropPlacement || !this.dragPosition) return false;
+
+      const hitbox = entity.getHitbox();
+      return (
+        this.dragPosition.x >= hitbox[0] &&
+        this.dragPosition.x <= hitbox[2] &&
+        this.dragPosition.y >= hitbox[1] &&
+        this.dragPosition.y <= hitbox[3]
+      );
+    });
+
+    const hits: Entity[] = pointerHits.length
+      ? pointerHits
+      : boxIntersect([dragHitbox], hitboxes).map((match) => hitboxEntities[match[1]]);
 
     const primaryIntersection = getBestIntersect(hits, dragHitbox, dragEntity);
 

@@ -14,6 +14,7 @@ const en = {
   'Toggle between Kanban and markdown mode': 'Toggle between Kanban and markdown mode',
 
   'View as board': 'View as board',
+  'View as stacks': 'View as stacks',
   'View as list': 'View as list',
   'View as table': 'View as table',
   'Board view': 'Board view',

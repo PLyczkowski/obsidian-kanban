@@ -20,6 +20,7 @@ const emptyDimensions: Dimensions = {
 };
 
 export const dragLeaveDebounceLength = 100;
+const columnDropZoneDelay = 300;
 
 export class SortManager {
   dndManager: DndManager;
@@ -225,7 +226,10 @@ export class SortManager {
         this.sortables.has(primaryIntersection.entityId) &&
         primaryIntersectionId !== dragEntityId
       ) {
-        this.dndManager.onDrop(dragEntity, primaryIntersection);
+        this.dndManager.onDrop(dragEntity, primaryIntersection, {
+          dragPosition,
+          dropHitbox,
+        });
       }
 
       this.resetSelf({
@@ -264,6 +268,12 @@ export class SortManager {
 
     win.clearTimeout(this.dragLeaveTimeout);
     win.clearTimeout(this.dragEnterTimeout);
+
+    const primaryData = primaryIntersection.getData();
+    const isColumnDropZone =
+      primaryData.stackDropPlacement === 'stack-before' ||
+      primaryData.stackDropPlacement === 'stack-after';
+    const dragEnterDelay = isColumnDropZone ? columnDropZoneDelay : 10;
 
     this.dragEnterTimeout = win.setTimeout(() => {
       const dims = (this.hitboxDimensions = getHitboxDimensions(
@@ -312,14 +322,15 @@ export class SortManager {
           this.resetEl(el);
         }
       });
-    }, 10);
+    }, dragEnterDelay);
   };
 
   private dragLeaveTimeout = 0;
   handleDragLeave = ({ dragEntity, primaryIntersection }: DragEventData) => {
     if (!this.isSorting) return;
 
-    const { acceptsSort } = primaryIntersection.getData();
+    const primaryData = primaryIntersection.getData();
+    const { acceptsSort } = primaryData;
     const inDroparea = acceptsSort && !acceptsSort.includes(dragEntity.getData().type);
     if (inDroparea) {
       const sortable = this.sortables.get(primaryIntersection.entityId);
@@ -329,6 +340,13 @@ export class SortManager {
     const { win } = this.dndManager;
     win.clearTimeout(this.dragLeaveTimeout);
     win.clearTimeout(this.dragEnterTimeout);
+    if (
+      primaryData.stackDropPlacement === 'stack-before' ||
+      primaryData.stackDropPlacement === 'stack-after'
+    ) {
+      return this.resetSelf({ maintainHidden: true, maintainPlaceholder: true });
+    }
+
     this.dragLeaveTimeout = win.setTimeout(() => {
       this.resetSelf({ maintainHidden: true, maintainPlaceholder: true });
     }, dragLeaveDebounceLength);

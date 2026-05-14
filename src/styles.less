@@ -288,6 +288,12 @@ button.kanban-plugin__search-cancel-button .kanban-plugin__icon {
       flex-direction: column;
     }
   }
+
+  &.kanban-plugin__stacks {
+    > div {
+      gap: 0;
+    }
+  }
 }
 
 .is-mobile .view-content:not(.is-mobile-editing) .kanban-plugin__board > div {
@@ -308,6 +314,61 @@ button.kanban-plugin__search-cancel-button .kanban-plugin__icon {
   .kanban-plugin__vertical & {
     margin-block-end: 10px;
     margin-inline-end: 0;
+  }
+}
+
+.kanban-plugin__lane-stack {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  align-self: stretch;
+
+  .kanban-plugin__lane-wrapper {
+    margin-inline-end: 0;
+    max-height: none;
+  }
+}
+
+.kanban-plugin__stack-drop-zone {
+  flex: 0 0 auto;
+  border-radius: var(--radius-s);
+  transition:
+    width 120ms ease-in-out,
+    height 120ms ease-in-out,
+    background-color 120ms ease-in-out;
+
+  > div {
+    width: 100%;
+    height: 100%;
+  }
+
+  &.is-dropping {
+    background-color: hsla(var(--interactive-accent-hsl), 0.18);
+    outline: 1px solid hsla(var(--interactive-accent-hsl), 0.6);
+  }
+}
+
+.kanban-plugin__stack-drop-zone-column {
+  width: 10px;
+  min-height: 100%;
+  align-self: stretch;
+
+  &.is-dropping {
+    width: 64px;
+  }
+}
+
+.kanban-plugin__stack-drop-zone-row {
+  height: 28px;
+  width: 100%;
+
+  &.is-dropping {
+    height: 56px;
+  }
+
+  &.is-column-end {
+    flex-grow: 1;
+    min-height: 28px;
   }
 }
 

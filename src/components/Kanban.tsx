@@ -271,6 +271,7 @@ export const Kanban = ({ view, stateManager }: KanbanProps) => {
                   {
                     [c('horizontal')]: boardView !== 'list',
                     [c('vertical')]: boardView === 'list',
+                    [c('stacks')]: boardView === 'stacks',
                     'is-adding-lane': isLaneFormVisible,
                   },
                 ])}

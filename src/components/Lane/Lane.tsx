@@ -32,6 +32,7 @@ import { DataTypes, EditState, EditingState, Item, Lane } from '../types';
 import { LaneHeader } from './LaneHeader';
 
 const laneAccepts = [DataTypes.Item];
+const stackAccepts = [DataTypes.Lane];
 
 export interface DraggableLaneProps {
   lane: Lane;
@@ -242,11 +243,146 @@ export interface LanesProps {
   collapseDir: 'horizontal' | 'vertical';
 }
 
+interface LaneStack {
+  id: string;
+  lanes: Array<{ lane: Lane; index: number }>;
+}
+
+interface StackDropZoneProps {
+  id: string;
+  index: number;
+  className: string;
+  placement: 'stack-before' | 'stack-after' | 'lane-before' | 'lane-after';
+  targetLaneIndex?: number;
+  targetStackId?: string;
+  isColumnEnd?: boolean;
+}
+
+function StackDropZone({
+  id,
+  index,
+  className,
+  placement,
+  targetLaneIndex,
+  targetStackId,
+  isColumnEnd,
+}: StackDropZoneProps) {
+  const elementRef = useRef<HTMLDivElement>(null);
+  const measureRef = useRef<HTMLDivElement>(null);
+  const data = useMemo(
+    () => ({
+      id,
+      type: 'stack-drop-zone',
+      accepts: stackAccepts,
+      acceptsSort: [],
+      stackDropPlacement: placement,
+      targetLaneIndex,
+      targetStackId,
+    }),
+    [id, placement, targetLaneIndex, targetStackId]
+  );
+
+  return (
+    <div
+      ref={measureRef}
+      className={`${c('stack-drop-zone')} ${className} ${isColumnEnd ? 'is-column-end' : ''}`}
+    >
+      <div ref={elementRef}>
+        <Droppable
+          elementRef={elementRef}
+          measureRef={measureRef}
+          id={id}
+          index={index}
+          data={data}
+        />
+      </div>
+    </div>
+  );
+}
+
+function getLaneStacks(lanes: Lane[]): LaneStack[] {
+  const stacks: LaneStack[] = [];
+  const stackLookup = new Map<string, LaneStack>();
+
+  lanes.forEach((lane, index) => {
+    const stackId = lane.data.stack || lane.id;
+    let stack = stackLookup.get(stackId);
+
+    if (!stack) {
+      stack = { id: stackId, lanes: [] };
+      stackLookup.set(stackId, stack);
+      stacks.push(stack);
+    }
+
+    stack.lanes.push({ lane, index });
+  });
+
+  return stacks;
+}
+
 function LanesRaw({ lanes, collapseDir }: LanesProps) {
   const search = useContext(SearchContext);
   const { view } = useContext(KanbanContext);
   const boardView = view.useViewState(frontmatterKey) || 'board';
   const collapseState = view.useViewState('list-collapse') || [];
+
+  if (boardView === 'stacks') {
+    const stacks = getLaneStacks(lanes);
+
+    return (
+      <>
+        {stacks.map((stack, stackIndex) => (
+          <Fragment key={stack.id}>
+            <StackDropZone
+              id={`stack-before-${stack.id}`}
+              index={stack.lanes[0].index}
+              className={c('stack-drop-zone-column')}
+              placement="stack-before"
+              targetStackId={stack.id}
+            />
+            <div key={stack.id} className={c('lane-stack')}>
+              <StackDropZone
+                id={`stack-top-${stack.id}`}
+                index={stack.lanes[0].index}
+                className={c('stack-drop-zone-row')}
+                placement="lane-before"
+                targetLaneIndex={stack.lanes[0].index}
+              />
+              {stack.lanes.map(({ lane, index }, laneStackIndex) => (
+                <Fragment key={lane.id}>
+                  <DraggableLane
+                    collapseDir={collapseDir}
+                    isCollapsed={
+                      (search?.query && !search.lanes.has(lane)) || !!collapseState[index]
+                    }
+                    lane={lane}
+                    laneIndex={index}
+                  />
+                  <StackDropZone
+                    id={`lane-after-${lane.id}`}
+                    index={index + 1}
+                    className={c('stack-drop-zone-row')}
+                    placement="lane-after"
+                    targetLaneIndex={index}
+                    isColumnEnd={laneStackIndex === stack.lanes.length - 1}
+                  />
+                </Fragment>
+              ))}
+            </div>
+            {stackIndex === stacks.length - 1 && (
+              <StackDropZone
+                id={`stack-after-${stack.id}`}
+                index={stack.lanes.last().index + 1}
+                className={c('stack-drop-zone-column')}
+                placement="stack-after"
+                targetStackId={stack.id}
+              />
+            )}
+          </Fragment>
+        ))}
+      </>
+    );
+  }
 
   return (
     <>

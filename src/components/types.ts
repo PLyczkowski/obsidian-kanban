@@ -20,6 +20,7 @@ export interface LaneData {
   title: string;
   maxItems?: number;
   color?: CanvasColor;
+  stack?: string;
   dom?: HTMLDivElement;
   forceEditMode?: boolean;
   sorted?: LaneSort | string;

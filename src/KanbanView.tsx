@@ -398,6 +398,13 @@ export class KanbanView extends TextFileView implements HoverParent {
             )
             .addItem((item) =>
               item
+                .setTitle(t('View as stacks'))
+                .setIcon('lucide-columns-3')
+                .setChecked(view === 'stacks')
+                .onClick(() => this.setView('stacks'))
+            )
+            .addItem((item) =>
+              item
                 .setTitle(t('View as table'))
                 .setIcon('lucide-table')
                 .setChecked(view === 'table')

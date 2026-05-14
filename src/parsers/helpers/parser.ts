@@ -75,3 +75,13 @@ export function parseCanvasColor(str: string): CanvasColor | null {
 
   return null;
 }
+
+export function parseLaneStack(str: string) {
+  const stack = str.trim();
+
+  if (/^[a-zA-Z0-9_-]+$/.test(stack)) {
+    return stack;
+  }
+
+  return null;
+}
