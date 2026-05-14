@@ -13,7 +13,7 @@ import {
 } from 'src/parsers/helpers/inlineMetadata';
 
 import { SearchContextProps } from './context';
-import { Board, DataKey, DateColor, Item, Lane, PageData, TagColor } from './types';
+import { Board, CanvasColor, DataKey, DateColor, Item, Lane, PageData, TagColor } from './types';
 
 export const baseClassName = 'kanban-plugin';
 
@@ -31,6 +31,23 @@ export function generateInstanceId(len: number = 9): string {
   return Math.random()
     .toString(36)
     .slice(2, 2 + len);
+}
+
+export function getCanvasColorCss(color?: CanvasColor) {
+  if (!color) return null;
+  if (color.startsWith('#')) return color;
+
+  return `rgb(var(--canvas-color-${color}))`;
+}
+
+export function getCanvasColorRgb(color?: CanvasColor) {
+  if (!color) return null;
+  if (!color.startsWith('#')) return `var(--canvas-color-${color})`;
+
+  const match = color.match(/^#([0-9a-fA-F]{2})([0-9a-fA-F]{2})([0-9a-fA-F]{2})$/);
+  if (!match) return null;
+
+  return `${parseInt(match[1], 16)}, ${parseInt(match[2], 16)}, ${parseInt(match[3], 16)}`;
 }
 
 export function maybeCompleteForMove(

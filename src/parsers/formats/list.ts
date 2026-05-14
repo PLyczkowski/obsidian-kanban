@@ -37,6 +37,7 @@ import {
   executeDeletion,
   indentNewLines,
   markRangeForDeletion,
+  parseCanvasColor,
   parseLaneTitle,
   removeBlockId,
   replaceBrs,
@@ -237,6 +238,32 @@ function isArchiveLane(child: Content, children: Content[], currentIndex: number
   return prev && prev.type === 'thematicBreak';
 }
 
+function getLaneColor(child: Content) {
+  if (child.type !== 'paragraph' && child.type !== 'html') return null;
+
+  const match = toString(child).match(/^%%\s*kanban:color:\s*([^%]+?)\s*%%$/);
+  if (!match) return null;
+
+  return parseCanvasColor(match[1]);
+}
+
+function getLaneColorAfterHeading(children: Content[], currentIndex: number) {
+  for (let i = currentIndex + 1, len = children.length; i < len; i++) {
+    const child = children[i];
+
+    if (child.type === 'heading' || child.type === 'list') return null;
+
+    const color = getLaneColor(child);
+    if (color) return color;
+
+    if (child.type === 'paragraph' && toString(child) === t('Complete')) continue;
+
+    return null;
+  }
+
+  return null;
+}
+
 export function astToUnhydratedBoard(
   stateManager: StateManager,
   settings: KanbanSettings,
@@ -251,11 +278,14 @@ export function astToUnhydratedBoard(
       const isArchive = isArchiveLane(child, root.children, index);
       const headingBoundary = getNodeContentBoundary(child as Parent);
       const title = getStringFromBoundary(md, headingBoundary);
+      const color = getLaneColorAfterHeading(root.children, index);
 
       let shouldMarkItemsComplete = false;
 
       const list = getNextOfType(root.children, index, 'list', (child) => {
         if (child.type === 'heading') return false;
+
+        if (getLaneColor(child)) return true;
 
         if (child.type === 'paragraph') {
           const childStr = toString(child);
@@ -294,6 +324,7 @@ export function astToUnhydratedBoard(
           id: generateInstanceId(),
           data: {
             ...parseLaneTitle(title),
+            color,
             shouldMarkItemsComplete,
           },
         });
@@ -311,6 +342,7 @@ export function astToUnhydratedBoard(
           id: generateInstanceId(),
           data: {
             ...parseLaneTitle(title),
+            color,
             shouldMarkItemsComplete,
           },
         });
@@ -410,6 +442,11 @@ function laneToMd(lane: Lane) {
   lines.push(`## ${replaceNewLines(laneTitleWithMaxItems(lane.data.title, lane.data.maxItems))}`);
 
   lines.push('');
+
+  if (lane.data.color) {
+    lines.push(`%% kanban:color: ${lane.data.color} %%`);
+    lines.push('');
+  }
 
   if (lane.data.shouldMarkItemsComplete) {
     lines.push(completeString);

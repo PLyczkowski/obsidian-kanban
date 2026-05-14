@@ -405,6 +405,14 @@ button.kanban-plugin__lane-action-add {
   .collapse-vertical & {
     border-bottom: none;
   }
+
+  &.has-lane-color {
+    margin: 6px;
+    border: 1px solid rgba(var(--kanban-lane-color-rgb), 0.75);
+    border-radius: var(--input-radius);
+    background-color: rgba(var(--kanban-lane-color-rgb), 0.22);
+    box-shadow: inset 0 0 0 1000px rgba(var(--kanban-lane-color-rgb), 0.06);
+  }
 }
 
 .will-prepend .kanban-plugin__lane-header-wrapper {
@@ -701,6 +709,11 @@ button.kanban-plugin__new-item-button {
   }
 }
 
+.kanban-plugin__lane-wrapper.has-lane-color .kanban-plugin__item {
+  border-color: rgba(var(--kanban-lane-color-rgb), 0.78);
+  box-shadow: inset 0 0 0 1000px rgba(var(--kanban-lane-color-rgb), 0.05);
+}
+
 .kanban-plugin__item-content-wrapper {
   background: var(--background-primary);
 }
@@ -715,6 +728,15 @@ button.kanban-plugin__new-item-button {
   &:not(:only-child) {
     border-bottom: 1px solid var(--background-modifier-border);
   }
+}
+
+.kanban-plugin__lane-wrapper.has-lane-color .kanban-plugin__item-content-wrapper,
+.kanban-plugin__lane-wrapper.has-lane-color .kanban-plugin__item-title-wrapper {
+  background: rgba(var(--kanban-lane-color-rgb), 0.04);
+}
+
+.kanban-plugin__lane-wrapper.has-lane-color .kanban-plugin__item-title-wrapper:not(:only-child) {
+  border-bottom-color: rgba(var(--kanban-lane-color-rgb), 0.42);
 }
 
 .kanban-plugin__item-title {
@@ -1057,6 +1079,114 @@ button.kanban-plugin__item-postfix-button.is-enabled,
 .kanban-plugin__checkbox-label {
   font-size: 0.8125rem;
   line-height: var(--line-height-tight);
+}
+
+.kanban-plugin__lane-color-setting {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.kanban-plugin__lane-color-options {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.kanban-plugin__lane-color-option {
+  min-height: 26px;
+  padding-block: 4px;
+  padding-inline: 8px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  background-color: var(--background-primary);
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.kanban-plugin__lane-color-option.is-selected,
+.kanban-plugin__lane-custom-color-wrapper:has(input:focus) {
+  border-color: var(--interactive-accent);
+  box-shadow: 0 0 0 1px var(--interactive-accent);
+}
+
+.kanban-plugin__lane-color-swatch {
+  width: 26px;
+  padding: 0;
+  background-color: rgb(var(--kanban-lane-color-rgb));
+}
+
+.kanban-plugin__lane-color-swatch[data-lane-color='1'] {
+  --kanban-lane-color-rgb: var(--canvas-color-1);
+}
+
+.kanban-plugin__lane-color-swatch[data-lane-color='2'] {
+  --kanban-lane-color-rgb: var(--canvas-color-2);
+}
+
+.kanban-plugin__lane-color-swatch[data-lane-color='3'] {
+  --kanban-lane-color-rgb: var(--canvas-color-3);
+}
+
+.kanban-plugin__lane-color-swatch[data-lane-color='4'] {
+  --kanban-lane-color-rgb: var(--canvas-color-4);
+}
+
+.kanban-plugin__lane-color-swatch[data-lane-color='5'] {
+  --kanban-lane-color-rgb: var(--canvas-color-5);
+}
+
+.kanban-plugin__lane-color-swatch[data-lane-color='6'] {
+  --kanban-lane-color-rgb: var(--canvas-color-6);
+}
+
+.kanban-plugin__lane-custom-color-wrapper {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 26px;
+  padding-block: 2px;
+  padding-inline: 8px 4px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  color: var(--text-muted);
+  background-color: var(--background-primary);
+  font-size: 12px;
+}
+
+.kanban-plugin__lane-custom-color-wrapper input {
+  width: 24px;
+  height: 20px;
+  padding: 0;
+  border: none;
+  background: transparent;
+}
+
+.kanban-plugin__lane-menu-color-swatch {
+  display: inline-block;
+  width: 0.85em;
+  height: 0.85em;
+  margin-inline-end: 8px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 50%;
+  vertical-align: -0.1em;
+}
+
+.kanban-plugin__lane-menu-color-swatch.is-empty {
+  position: relative;
+  background: transparent;
+}
+
+.kanban-plugin__lane-menu-color-swatch.is-empty::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 1px;
+  right: 1px;
+  height: 1px;
+  background: var(--text-muted);
+  transform: rotate(-45deg);
 }
 
 .kanban-plugin__lane-setting-wrapper > div {

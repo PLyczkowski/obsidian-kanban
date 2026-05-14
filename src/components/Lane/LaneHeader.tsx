@@ -1,6 +1,6 @@
 import update from 'immutability-helper';
 import { Menu } from 'obsidian';
-import { memo } from 'preact/compat';
+import { CSSProperties, memo, useMemo } from 'preact/compat';
 import { Dispatch, StateUpdater, useCallback, useContext, useEffect, useState } from 'preact/hooks';
 import { useNestedEntityPath } from 'src/dnd/components/Droppable';
 import { t } from 'src/lang/helpers';
@@ -10,7 +10,7 @@ import { getDropAction } from '../Editor/helpers';
 import { GripIcon } from '../Icon/GripIcon';
 import { Icon } from '../Icon/Icon';
 import { KanbanContext } from '../context';
-import { c } from '../helpers';
+import { c, getCanvasColorCss, getCanvasColorRgb } from '../helpers';
 import { EditState, EditingState, Lane, isEditing } from '../types';
 import { ConfirmAction, useSettingsMenu } from './LaneMenu';
 import { LaneSettings } from './LaneSettings';
@@ -92,6 +92,17 @@ export const LaneHeader = memo(function LaneHeader({
   const lanePath = useNestedEntityPath(laneIndex);
 
   const { boardModifiers } = useContext(KanbanContext);
+  const laneColor = lane.data.color;
+  const laneHeaderStyle = useMemo<CSSProperties>(() => {
+    const color = getCanvasColorCss(laneColor);
+    const rgb = getCanvasColorRgb(laneColor);
+    if (!color || !rgb) return undefined;
+
+    return {
+      '--kanban-lane-color': color,
+      '--kanban-lane-color-rgb': rgb,
+    } as CSSProperties;
+  }, [laneColor]);
   const { settingsMenu, confirmAction, setConfirmAction } = useSettingsMenu({
     setEditState,
     path: lanePath,
@@ -132,7 +143,10 @@ export const LaneHeader = memo(function LaneHeader({
       <div
         // eslint-disable-next-line react/no-unknown-property
         onDblClick={onDoubleClick}
-        className={c('lane-header-wrapper')}
+        className={`${c('lane-header-wrapper')} ${laneColor ? 'has-lane-color' : ''}`}
+        data-lane-color={laneColor && /^[1-6]$/.test(laneColor) ? laneColor : undefined}
+        data-lane-custom-color={laneColor?.startsWith('#') ? 'true' : undefined}
+        style={laneHeaderStyle}
       >
         <div className={c('lane-grip')} ref={bindHandle}>
           <GripIcon />

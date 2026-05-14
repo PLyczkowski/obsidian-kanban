@@ -8,10 +8,42 @@ import { lableToName } from 'src/parsers/helpers/inlineMetadata';
 
 import { anyToString } from '../Item/MetadataTable';
 import { KanbanContext } from '../context';
-import { c, generateInstanceId } from '../helpers';
-import { EditState, Lane, LaneSort, LaneTemplate } from '../types';
+import { c, generateInstanceId, getCanvasColorCss } from '../helpers';
+import { CanvasColor, EditState, Lane, LaneSort, LaneTemplate } from '../types';
 
 export type LaneAction = 'delete' | 'archive' | 'archive-items' | null;
+
+const canvasColorOptions: Array<{ color?: CanvasColor; title: string }> = [
+  { color: undefined, title: 'None' },
+  { color: '1', title: 'Red' },
+  { color: '2', title: 'Orange' },
+  { color: '3', title: 'Yellow' },
+  { color: '4', title: 'Green' },
+  { color: '5', title: 'Cyan' },
+  { color: '6', title: 'Purple' },
+];
+
+function getColorTitle(option: (typeof canvasColorOptions)[number]) {
+  const fragment = activeDocument.createDocumentFragment();
+  const swatch = activeDocument.createElement('span');
+  const title = activeDocument.createElement('span');
+
+  swatch.className = c('lane-menu-color-swatch');
+
+  const color = getCanvasColorCss(option.color);
+  if (color) {
+    swatch.style.setProperty('background-color', color);
+    swatch.style.setProperty('border-color', color);
+  } else {
+    swatch.addClass('is-empty');
+  }
+
+  title.textContent = t(option.title as any);
+
+  fragment.append(swatch, title);
+
+  return fragment;
+}
 
 const actionLabels = {
   delete: {
@@ -75,6 +107,23 @@ export function useSettingsMenu({ setEditState, path, lane }: UseSettingsMenuPar
     let canSortDate = false;
     let canSortTags = false;
 
+    const setLaneColor = (color?: CanvasColor) => {
+      boardModifiers.updateLane(
+        path,
+        update(lane, {
+          data: color
+            ? {
+                color: {
+                  $set: color,
+                },
+              }
+            : {
+                $unset: ['color'],
+              },
+        })
+      );
+    };
+
     lane.children.forEach((item) => {
       const taskData = item.data.metadata.inlineMetadata;
       if (taskData) {
@@ -100,6 +149,27 @@ export function useSettingsMenu({ setEditState, path, lane }: UseSettingsMenuPar
           .setIcon('lucide-archive')
           .setTitle(t('Archive cards'))
           .onClick(() => setConfirmAction('archive-items'));
+      })
+      .addItem((item) => {
+        const submenu = (item as any).setTitle(t('Set list color')).setIcon('palette').setSubmenu();
+
+        canvasColorOptions.forEach((option) => {
+          submenu.addItem((subItem: any) => {
+            subItem
+              .setIcon(null)
+              .setTitle(getColorTitle(option))
+              .setChecked(lane.data.color === option.color || (!lane.data.color && !option.color))
+              .onClick(() => setLaneColor(option.color));
+          });
+        });
+
+        submenu.addSeparator();
+        submenu.addItem((subItem: any) => {
+          subItem
+            .setIcon('pipette')
+            .setTitle(t('Custom color...'))
+            .onClick(() => setEditState({ x: 0, y: 0 }));
+        });
       })
       .addSeparator()
       .addItem((i) => {
