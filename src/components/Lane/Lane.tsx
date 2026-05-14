@@ -1,7 +1,16 @@
 import animateScrollTo from 'animated-scroll-to';
 import classcat from 'classcat';
 import update from 'immutability-helper';
-import { Fragment, memo, useCallback, useContext, useMemo, useRef, useState } from 'preact/compat';
+import {
+  CSSProperties,
+  Fragment,
+  memo,
+  useCallback,
+  useContext,
+  useMemo,
+  useRef,
+  useState,
+} from 'preact/compat';
 import {
   DraggableProps,
   Droppable,
@@ -18,7 +27,7 @@ import { getTaskStatusDone } from 'src/parsers/helpers/inlineMetadata';
 import { Items } from '../Item/Item';
 import { ItemForm } from '../Item/ItemForm';
 import { KanbanContext, SearchContext, SortContext } from '../context';
-import { c, generateInstanceId } from '../helpers';
+import { c, generateInstanceId, getCanvasColorCss, getCanvasColorRgb } from '../helpers';
 import { DataTypes, EditState, EditingState, Item, Lane } from '../types';
 import { LaneHeader } from './LaneHeader';
 
@@ -50,13 +59,22 @@ function DraggableLaneRaw({
   const laneWidth = stateManager.useSetting('lane-width');
   const fullWidth = boardView === 'list' && stateManager.useSetting('full-list-lane-width');
   const insertionMethod = stateManager.useSetting('new-card-insertion-method');
-  const laneStyles = useMemo(
-    () =>
-      !(isCollapsed && collapseDir === 'horizontal') && (fullWidth || laneWidth)
-        ? { width: fullWidth ? '100%' : `${laneWidth}px` }
-        : undefined,
-    [fullWidth, laneWidth, isCollapsed]
-  );
+  const laneStyles = useMemo<CSSProperties>(() => {
+    const styles: CSSProperties = {};
+
+    if (!(isCollapsed && collapseDir === 'horizontal') && (fullWidth || laneWidth)) {
+      styles.width = fullWidth ? '100%' : `${laneWidth}px`;
+    }
+
+    const color = getCanvasColorCss(lane.data.color);
+    const rgb = getCanvasColorRgb(lane.data.color);
+    if (color && rgb) {
+      styles['--kanban-lane-color'] = color;
+      styles['--kanban-lane-color-rgb'] = rgb;
+    }
+
+    return Object.keys(styles).length ? styles : undefined;
+  }, [fullWidth, laneWidth, isCollapsed, collapseDir, lane.data.color]);
 
   const elementRef = useRef<HTMLDivElement>(null);
   const measureRef = useRef<HTMLDivElement>(null);
@@ -145,6 +163,7 @@ function DraggableLaneRaw({
           c('lane-wrapper'),
           {
             'is-sorting': isSorting,
+            'has-lane-color': !!lane.data.color,
             'collapse-horizontal': isCollapsed && collapseDir === 'horizontal',
             'collapse-vertical': isCollapsed && collapseDir === 'vertical',
           },

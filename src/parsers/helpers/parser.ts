@@ -1,5 +1,5 @@
 import { Stat } from 'obsidian';
-import { Item } from 'src/components/types';
+import { CanvasColor, Item } from 'src/components/types';
 
 export interface FileAccessor {
   isEmbed: boolean;
@@ -64,4 +64,14 @@ export function parseLaneTitle(str: string) {
   if (match == null) return { title: str, maxItems: 0 };
 
   return { title: match[1], maxItems: Number(match[2]) };
+}
+
+export function parseCanvasColor(str: string): CanvasColor | null {
+  const color = str.trim();
+
+  if (/^[1-6]$/.test(color) || /^#[0-9a-fA-F]{6}$/.test(color)) {
+    return color.toUpperCase() as CanvasColor;
+  }
+
+  return null;
 }

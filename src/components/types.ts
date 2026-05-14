@@ -13,10 +13,13 @@ export enum LaneSort {
   TagsDsc,
 }
 
+export type CanvasColor = '1' | '2' | '3' | '4' | '5' | '6' | `#${string}`;
+
 export interface LaneData {
   shouldMarkItemsComplete?: boolean;
   title: string;
   maxItems?: number;
+  color?: CanvasColor;
   dom?: HTMLDivElement;
   forceEditMode?: boolean;
   sorted?: LaneSort | string;

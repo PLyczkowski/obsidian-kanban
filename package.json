@@ -7,6 +7,8 @@
     "typecheck": "tsc --noemit",
     "dev": "node esbuild.config.mjs",
     "build": "node esbuild.config.mjs production",
+    "deploy:obsidian": "node scripts/deploy-plugin.mjs",
+    "build:obsidian": "node esbuild.config.mjs production && node scripts/deploy-plugin.mjs",
     "lint": "eslint ./src/**/*.{ts,tsx}",
     "lint:fix": "eslint ./src/**/*.{ts,tsx} --fix",
     "prettier": "prettier --write \"./src/**/*.{ts,tsx}\"",
