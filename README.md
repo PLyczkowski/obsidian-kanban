@@ -1,5 +1,8 @@
 # Obsidian Kanban Plugin
 
+> This is a personal fork of [mgmeyers/obsidian-kanban](https://github.com/mgmeyers/obsidian-kanban).
+> It includes a small patch: clicking outside a non-empty new card editor saves the card.
+
 **The Kanban plugin is looking for new maintainers.** Interested? [Read more here.](https://github.com/mgmeyers/obsidian-kanban/blob/main/MAINTAINERS.md)
 
 ---
