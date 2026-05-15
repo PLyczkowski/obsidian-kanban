@@ -16,11 +16,12 @@ import {
   LaneTemplate,
 } from 'src/components/types';
 import { laneTitleWithMaxItems } from 'src/helpers';
+import { getLaneStackId } from 'src/helpers/stacks';
 import { defaultSort } from 'src/helpers/util';
 import { t } from 'src/lang/helpers';
 import { visit } from 'unist-util-visit';
 
-import { archiveString, completeString, settingsToCodeblock } from '../common';
+import { archiveString, completeString, frontmatterKey, settingsToCodeblock } from '../common';
 import { DateNode, FileNode, TimeNode, ValueNode } from '../extensions/types';
 import {
   ContentBoundary,
@@ -239,25 +240,33 @@ function isArchiveLane(child: Content, children: Content[], currentIndex: number
   return prev && prev.type === 'thematicBreak';
 }
 
-function getLaneColor(child: Content) {
+function getRawNodeString(md: string, child: Content) {
+  const position = child.position;
+
+  if (!position) return toString(child);
+
+  return md.slice(position.start.offset, position.end.offset).trim();
+}
+
+function getLaneColor(child: Content, md: string) {
   if (child.type !== 'paragraph' && child.type !== 'html') return null;
 
-  const match = toString(child).match(/^%%\s*kanban:color:\s*([^%]+?)\s*%%$/);
+  const match = getRawNodeString(md, child).match(/^%%\s*kanban:color:\s*([^%]+?)\s*%%$/);
   if (!match) return null;
 
   return parseCanvasColor(match[1]);
 }
 
-function getLaneStack(child: Content) {
+function getLaneStack(child: Content, md: string) {
   if (child.type !== 'paragraph' && child.type !== 'html') return null;
 
-  const match = toString(child).match(/^%%\s*kanban:stack:\s*([^%]+?)\s*%%$/);
+  const match = getRawNodeString(md, child).match(/^%%\s*kanban:stack:\s*([^%]+?)\s*%%$/);
   if (!match) return null;
 
   return parseLaneStack(match[1]);
 }
 
-function getLaneMetadataAfterHeading(children: Content[], currentIndex: number) {
+function getLaneMetadataAfterHeading(children: Content[], currentIndex: number, md: string) {
   let color = null;
   let stack = null;
 
@@ -266,13 +275,13 @@ function getLaneMetadataAfterHeading(children: Content[], currentIndex: number) 
 
     if (child.type === 'heading' || child.type === 'list') return { color, stack };
 
-    const laneColor = getLaneColor(child);
+    const laneColor = getLaneColor(child, md);
     if (laneColor) {
       color = laneColor;
       continue;
     }
 
-    const laneStack = getLaneStack(child);
+    const laneStack = getLaneStack(child, md);
     if (laneStack) {
       stack = laneStack;
       continue;
@@ -300,14 +309,14 @@ export function astToUnhydratedBoard(
       const isArchive = isArchiveLane(child, root.children, index);
       const headingBoundary = getNodeContentBoundary(child as Parent);
       const title = getStringFromBoundary(md, headingBoundary);
-      const { color, stack } = getLaneMetadataAfterHeading(root.children, index);
+      const { color, stack } = getLaneMetadataAfterHeading(root.children, index, md);
 
       let shouldMarkItemsComplete = false;
 
       const list = getNextOfType(root.children, index, 'list', (child) => {
         if (child.type === 'heading') return false;
 
-        if (getLaneColor(child) || getLaneStack(child)) return true;
+        if (getLaneColor(child, md) || getLaneStack(child, md)) return true;
 
         if (child.type === 'paragraph') {
           const childStr = toString(child);
@@ -460,7 +469,7 @@ function itemToMd(item: Item) {
   return `- [${item.data.checkChar}] ${addBlockId(indentNewLines(item.data.titleRaw), item)}`;
 }
 
-function laneToMd(lane: Lane, sharedStacks: Set<string>) {
+function laneToMd(lane: Lane, sharedStacks: Set<string>, preserveSingleStacks: boolean) {
   const lines: string[] = [];
 
   lines.push(`## ${replaceNewLines(laneTitleWithMaxItems(lane.data.title, lane.data.maxItems))}`);
@@ -472,8 +481,9 @@ function laneToMd(lane: Lane, sharedStacks: Set<string>) {
     lines.push('');
   }
 
-  if (lane.data.stack && sharedStacks.has(lane.data.stack)) {
-    lines.push(`%% kanban:stack: ${lane.data.stack} %%`);
+  const stack = preserveSingleStacks ? getLaneStackId(lane) : lane.data.stack;
+  if (stack && (preserveSingleStacks || sharedStacks.has(stack))) {
+    lines.push(`%% kanban:stack: ${stack} %%`);
     lines.push('');
   }
 
@@ -507,9 +517,13 @@ function archiveToMd(archive: Item[]) {
 }
 
 export function boardToMd(board: Board) {
+  const preserveSingleStacks =
+    board.data.frontmatter?.[frontmatterKey] === 'stacks' ||
+    board.data.settings?.[frontmatterKey] === 'stacks';
   const stackCounts = board.children.reduce((counts, lane) => {
-    if (lane.data.stack) {
-      counts.set(lane.data.stack, (counts.get(lane.data.stack) || 0) + 1);
+    const stack = preserveSingleStacks ? getLaneStackId(lane) : lane.data.stack;
+    if (stack) {
+      counts.set(stack, (counts.get(stack) || 0) + 1);
     }
 
     return counts;
@@ -520,7 +534,7 @@ export function boardToMd(board: Board) {
       .map(([stack]) => stack)
   );
   const lanes = board.children.reduce((md, lane) => {
-    return md + laneToMd(lane, sharedStacks);
+    return md + laneToMd(lane, sharedStacks, preserveSingleStacks);
   }, '');
 
   const frontmatter = ['---', '', stringifyYaml(board.data.frontmatter), '---', '', ''].join('\n');

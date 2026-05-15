@@ -78,6 +78,7 @@ export function ItemForm({ addItems, editState, setEditState, hideButton }: Item
   return (
     <div className={c('item-button-wrapper')}>
       <button
+        aria-label={t('Add a card')}
         className={c('new-item-button')}
         onClick={() => setEditState({ x: 0, y: 0 })}
         onDragOver={(e) => {
@@ -86,7 +87,7 @@ export function ItemForm({ addItems, editState, setEditState, hideButton }: Item
           }
         }}
       >
-        <span className={c('item-button-plus')}>+</span> {t('Add a card')}
+        <span className={c('item-button-plus')}>+</span>
       </button>
     </div>
   );

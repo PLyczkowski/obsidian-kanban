@@ -322,6 +322,7 @@ button.kanban-plugin__search-cancel-button .kanban-plugin__icon {
   flex-direction: column;
   flex-shrink: 0;
   align-self: stretch;
+  min-height: 100%;
 
   .kanban-plugin__lane-wrapper {
     margin-inline-end: 0;
@@ -349,7 +350,7 @@ button.kanban-plugin__search-cancel-button .kanban-plugin__icon {
 }
 
 .kanban-plugin__stack-drop-zone-column {
-  width: 10px;
+  width: 28px;
   min-height: 100%;
   align-self: stretch;
 
@@ -478,6 +479,15 @@ button.kanban-plugin__lane-action-add {
 
 .will-prepend .kanban-plugin__lane-header-wrapper {
   border-bottom: none;
+}
+
+.kanban-plugin__lane-stack-debug {
+  padding: 2px 8px 6px;
+  color: var(--text-muted);
+  font-family: var(--font-monospace);
+  font-size: 10px;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
 }
 
 .kanban-plugin__lane-wrapper.collapse-horizontal {

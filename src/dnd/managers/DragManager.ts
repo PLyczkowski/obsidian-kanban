@@ -128,6 +128,7 @@ export class DragManager {
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   dragEnd(e: PointerEvent) {
+    this.calculateDragIntersect();
     this.emitter.emit('dragEnd', this.getDragEventData());
     this.dragEntityMargin = undefined;
     this.dragEntity = undefined;

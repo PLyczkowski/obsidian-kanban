@@ -6,6 +6,7 @@ import { KanbanView } from './KanbanView';
 import { KanbanSettings, SettingRetrievers } from './Settings';
 import { getDefaultDateFormat, getDefaultTimeFormat } from './components/helpers';
 import { Board, BoardTemplate, Item } from './components/types';
+import { logBoardStacks, writeStackDebugToVault } from './helpers/stackDebug';
 import { ListFormat } from './parsers/List';
 import { BaseFormat, frontmatterKey, shouldRefreshBoard } from './parsers/common';
 import { getTaskStatusDone } from './parsers/helpers/inlineMetadata';
@@ -89,6 +90,8 @@ export class StateManager {
   async newBoard(view: KanbanView, md: string) {
     try {
       const board = this.getParsedBoard(md);
+      logBoardStacks('newBoard:parsed', board, { markdown: md });
+      writeStackDebugToVault(this.app, 'newBoard:parsed', board, { markdown: md });
       await view.prerender(board);
       this.setState(board, false);
     } catch (e) {
@@ -104,7 +107,14 @@ export class StateManager {
     const view = this.getAView();
 
     if (view) {
+      logBoardStacks('saveToDisk:before-md', this.state);
+      writeStackDebugToVault(this.app, 'saveToDisk:before-md', this.state);
       const fileStr = this.parser.boardToMd(this.state);
+      const parsedBoard = this.parser.mdToBoard(fileStr);
+      logBoardStacks('saveToDisk:after-md', parsedBoard, {
+        markdown: fileStr,
+      });
+      writeStackDebugToVault(this.app, 'saveToDisk:after-md', parsedBoard, { markdown: fileStr });
       view.requestSaveToDisk(fileStr);
 
       this.viewSet.forEach((view) => {

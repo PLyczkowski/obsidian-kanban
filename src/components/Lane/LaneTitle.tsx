@@ -1,6 +1,7 @@
 import { EditorView, ViewUpdate } from '@codemirror/view';
 import classcat from 'classcat';
 import { Dispatch, StateUpdater, useCallback, useContext, useEffect, useRef } from 'preact/hooks';
+import useOnclickOutside from 'react-cool-onclickoutside';
 import { laneTitleWithMaxItems } from 'src/helpers';
 
 import { MarkdownEditor, allowNewLine } from '../Editor/MarkdownEditor';
@@ -80,20 +81,30 @@ export function LaneTitle({ maxItems, editState, setEditState, title, onChange }
     [setEditState, stateManager]
   );
   const onSubmit = useCallback(() => setEditState(EditingState.complete), [setEditState]);
+  const clickOutsideRef = useOnclickOutside(onSubmit, {
+    ignoreClass: [
+      c('ignore-click-outside'),
+      c('lane-setting-wrapper'),
+      'mobile-toolbar',
+      'suggestion-container',
+    ],
+  });
   const onEscape = useCallback(() => setEditState(EditingState.cancel), [setEditState]);
 
   return (
     <div className={c('lane-title')}>
       {isEditing(editState) ? (
-        <MarkdownEditor
-          editState={editState}
-          className={c('lane-input')}
-          onChange={onUpdate}
-          onEnter={onEnter}
-          onEscape={onEscape}
-          onSubmit={onSubmit}
-          value={laneTitleWithMaxItems(title, maxItems)}
-        />
+        <div ref={clickOutsideRef}>
+          <MarkdownEditor
+            editState={editState}
+            className={c('lane-input')}
+            onChange={onUpdate}
+            onEnter={onEnter}
+            onEscape={onEscape}
+            onSubmit={onSubmit}
+            value={laneTitleWithMaxItems(title, maxItems)}
+          />
+        </div>
       ) : (
         <div className={c('lane-title-text')}>
           <MarkdownRenderer markdownString={title} />

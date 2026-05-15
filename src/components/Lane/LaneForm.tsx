@@ -8,6 +8,7 @@ import { MarkdownEditor, allowNewLine } from '../Editor/MarkdownEditor';
 import { KanbanContext } from '../context';
 import { c, generateInstanceId } from '../helpers';
 import { LaneTemplate } from '../types';
+import { frontmatterKey } from 'src/parsers/common';
 
 interface LaneFormProps {
   onNewLane: () => void;
@@ -22,7 +23,8 @@ export function LaneForm({ onNewLane, closeLaneForm }: LaneFormProps) {
     ignoreClass: [c('ignore-click-outside'), 'mobile-toolbar', 'suggestion-container'],
   });
 
-  const { boardModifiers, stateManager } = useContext(KanbanContext);
+  const { boardModifiers, stateManager, view } = useContext(KanbanContext);
+  const boardView = view.useViewState(frontmatterKey);
 
   useLayoutEffect(() => {
     inputRef.current?.focus();
@@ -30,12 +32,14 @@ export function LaneForm({ onNewLane, closeLaneForm }: LaneFormProps) {
 
   const createLane = useCallback(
     (cm: EditorView, title: string) => {
+      const id = generateInstanceId();
       boardModifiers.addLane({
         ...LaneTemplate,
-        id: generateInstanceId(),
+        id,
         children: [],
         data: {
           ...parseLaneTitle(title),
+          stack: boardView === 'stacks' ? id : undefined,
           shouldMarkItemsComplete: shouldMarkAsComplete,
         },
       });
@@ -51,7 +55,7 @@ export function LaneForm({ onNewLane, closeLaneForm }: LaneFormProps) {
       setShouldMarkAsComplete(false);
       onNewLane();
     },
-    [onNewLane, setShouldMarkAsComplete, boardModifiers]
+    [onNewLane, setShouldMarkAsComplete, boardModifiers, boardView]
   );
 
   const editState = useMemo(() => ({ x: 0, y: 0 }), []);

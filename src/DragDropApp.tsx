@@ -19,6 +19,8 @@ import {
   updateEntity,
 } from './dnd/util/data';
 import { getBoardModifiers } from './helpers/boardModifiers';
+import { logStackDebug, summarizeLaneStacks } from './helpers/stackDebug';
+import { StackDropPlacement, moveLaneInStacks } from './helpers/stacks';
 import KanbanPlugin from './main';
 import { frontmatterKey } from './parsers/common';
 import {
@@ -26,34 +28,6 @@ import {
   getTaskStatusPreDone,
   toggleTask,
 } from './parsers/helpers/inlineMetadata';
-
-type StackDropPlacement = 'stack-before' | 'stack-after' | 'lane-before' | 'lane-after';
-
-function getLaneStackId(lane: Lane) {
-  return lane.data.stack || lane.id;
-}
-
-function normalizeLaneStacks(lanes: Lane[]) {
-  const stackCounts = lanes.reduce((counts, lane) => {
-    const stack = getLaneStackId(lane);
-    counts.set(stack, (counts.get(stack) || 0) + 1);
-    return counts;
-  }, new Map<string, number>());
-
-  return lanes.map((lane) => {
-    const stack = getLaneStackId(lane);
-
-    if (stackCounts.get(stack) > 1) {
-      return update(lane, { data: { stack: { $set: stack } } });
-    }
-
-    if (lane.data.stack) {
-      return update(lane, { data: { $unset: ['stack'] } });
-    }
-
-    return lane;
-  });
-}
 
 function getStackDropPlacement(
   position: { x: number; y: number },
@@ -85,71 +59,6 @@ function getStackDropPlacementFromData(
   }
 
   return null;
-}
-
-function reorderLaneForStacks(
-  lanes: Lane[],
-  dragIndex: number,
-  dropIndex: number,
-  placement: StackDropPlacement,
-  targetLaneIndex?: number,
-  targetStackId?: string
-) {
-  const entries = lanes.map((lane, index) => ({
-    lane,
-    collapsed: false,
-    originalIndex: index,
-  }));
-  const [dragged] = entries.splice(dragIndex, 1);
-  const rawTargetIndex = targetLaneIndex ?? dropIndex;
-  const targetIndex = dragIndex < rawTargetIndex ? rawTargetIndex - 1 : rawTargetIndex;
-  const target =
-    targetStackId && (placement === 'stack-before' || placement === 'stack-after')
-      ? entries.find((entry) => getLaneStackId(entry.lane) === targetStackId)
-      : entries[targetIndex];
-
-  if (!dragged || !target) return lanes;
-
-  if (placement === 'lane-before' || placement === 'lane-after') {
-    const targetStack = getLaneStackId(target.lane);
-    dragged.lane = update(dragged.lane, { data: { stack: { $set: targetStack } } });
-    target.lane = update(target.lane, { data: { stack: { $set: targetStack } } });
-
-    entries.splice(placement === 'lane-before' ? targetIndex : targetIndex + 1, 0, dragged);
-    return normalizeLaneStacks(entries.map(({ lane }) => lane));
-  }
-
-  const targetStack = targetStackId || getLaneStackId(target.lane);
-  const columns: Array<typeof entries> = [];
-  const columnLookup = new Map<string, typeof entries>();
-
-  entries.forEach((entry) => {
-    const stack = getLaneStackId(entry.lane);
-    let column = columnLookup.get(stack);
-
-    if (!column) {
-      column = [];
-      columnLookup.set(stack, column);
-      columns.push(column);
-    }
-
-    column.push(entry);
-  });
-
-  dragged.lane = update(dragged.lane, { data: { $unset: ['stack'] } });
-
-  const targetColumnIndex = columns.findIndex((column) =>
-    column.some((entry) => getLaneStackId(entry.lane) === targetStack)
-  );
-  const insertIndex = placement === 'stack-before' ? targetColumnIndex : targetColumnIndex + 1;
-  columns.splice(insertIndex, 0, [dragged]);
-
-  return normalizeLaneStacks(
-    columns.reduce<Lane[]>((result, column) => {
-      column.forEach(({ lane }) => result.push(lane));
-      return result;
-    }, [])
-  );
 }
 
 export function createApp(win: Window, plugin: KanbanPlugin) {
@@ -243,21 +152,25 @@ export function DragDropApp({ win, plugin }: { win: Window; plugin: KanbanPlugin
         ) {
           return stateManager.setState((board) => {
             const from = dragPath.last();
-            const to = dropPath.last();
             const placement = getStackDropPlacementFromData(
               dropEntity,
               dropContext?.dragPosition,
               dropContext?.dropHitbox
             );
             if (!placement) return board;
-            const nextChildren = reorderLaneForStacks(
-              board.children,
-              from,
-              to,
+            const nextChildren = moveLaneInStacks(board.children, from, {
               placement,
-              dropEntityData.targetLaneIndex,
-              dropEntityData.targetStackId
-            );
+              targetLaneIndex: dropEntityData.targetLaneIndex,
+              targetStackId: dropEntityData.targetStackId,
+            });
+            logStackDebug('drop:lane-stacks', {
+              dragPath,
+              dropPath,
+              placement,
+              dropEntityData,
+              before: summarizeLaneStacks(board.children),
+              after: summarizeLaneStacks(nextChildren),
+            });
             const collapsedState = view.getViewState('list-collapse') || [];
             const collapsedByLane = new Map(
               board.children.map((lane, index) => [lane.id, collapsedState[index]])

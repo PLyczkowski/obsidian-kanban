@@ -1,9 +1,12 @@
 import update from 'immutability-helper';
 import { Menu, Platform } from 'obsidian';
 import { Dispatch, StateUpdater, useContext, useEffect, useMemo, useState } from 'preact/hooks';
+import { updateEntity } from 'src/dnd/util/data';
 import { Path } from 'src/dnd/types';
+import { getLaneStackId } from 'src/helpers/stacks';
 import { defaultSort } from 'src/helpers/util';
 import { t } from 'src/lang/helpers';
+import { frontmatterKey } from 'src/parsers/common';
 import { lableToName } from 'src/parsers/helpers/inlineMetadata';
 
 import { anyToString } from '../Item/MetadataTable';
@@ -99,8 +102,9 @@ export interface UseSettingsMenuParams {
 }
 
 export function useSettingsMenu({ setEditState, path, lane }: UseSettingsMenuParams) {
-  const { stateManager, boardModifiers } = useContext(KanbanContext);
+  const { stateManager, boardModifiers, view } = useContext(KanbanContext);
   const [confirmAction, setConfirmAction] = useState<LaneAction>(null);
+  const boardView = view.useViewState(frontmatterKey);
 
   const settingsMenu = useMemo(() => {
     const metadataSortOptions = new Set<string>();
@@ -108,20 +112,25 @@ export function useSettingsMenu({ setEditState, path, lane }: UseSettingsMenuPar
     let canSortTags = false;
 
     const setLaneColor = (color?: CanvasColor) => {
-      boardModifiers.updateLane(
-        path,
-        update(lane, {
-          data: color
+      stateManager.setState((board) => {
+        return updateEntity(
+          board,
+          path,
+          color
             ? {
-                color: {
-                  $set: color,
+                data: {
+                  color: {
+                    $set: color,
+                  },
                 },
               }
             : {
-                $unset: ['color'],
-              },
-        })
-      );
+                data: {
+                  $unset: ['color'],
+                },
+              }
+        );
+      });
     };
 
     lane.children.forEach((item) => {
@@ -182,6 +191,7 @@ export function useSettingsMenu({ setEditState, path, lane }: UseSettingsMenuPar
               children: [],
               data: {
                 title: '',
+                stack: boardView === 'stacks' ? getLaneStackId(lane) : undefined,
                 shouldMarkItemsComplete: false,
                 forceEditMode: true,
               },
@@ -202,6 +212,7 @@ export function useSettingsMenu({ setEditState, path, lane }: UseSettingsMenuPar
               children: [],
               data: {
                 title: '',
+                stack: boardView === 'stacks' ? getLaneStackId(lane) : undefined,
                 shouldMarkItemsComplete: false,
                 forceEditMode: true,
               },
@@ -409,7 +420,7 @@ export function useSettingsMenu({ setEditState, path, lane }: UseSettingsMenuPar
     }
 
     return menu;
-  }, [stateManager, setConfirmAction, path, lane]);
+  }, [stateManager, boardModifiers, boardView, setConfirmAction, path, lane]);
 
   return {
     settingsMenu,

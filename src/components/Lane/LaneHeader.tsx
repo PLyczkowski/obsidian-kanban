@@ -3,6 +3,9 @@ import { Menu } from 'obsidian';
 import { CSSProperties, memo, useMemo } from 'preact/compat';
 import { Dispatch, StateUpdater, useCallback, useContext, useEffect, useState } from 'preact/hooks';
 import { useNestedEntityPath } from 'src/dnd/components/Droppable';
+import { updateEntity } from 'src/dnd/util/data';
+import { isStackDebugEnabled } from 'src/helpers/stackDebug';
+import { getLaneStackId } from 'src/helpers/stacks';
 import { t } from 'src/lang/helpers';
 import { parseLaneTitle } from 'src/parsers/helpers/parser';
 
@@ -91,8 +94,9 @@ export const LaneHeader = memo(function LaneHeader({
   const [editState, setEditState] = useState<EditState>(EditingState.cancel);
   const lanePath = useNestedEntityPath(laneIndex);
 
-  const { boardModifiers } = useContext(KanbanContext);
+  const { stateManager, boardModifiers } = useContext(KanbanContext);
   const laneColor = lane.data.color;
+  const showStackDebug = isStackDebugEnabled();
   const laneHeaderStyle = useMemo<CSSProperties>(() => {
     const color = getCanvasColorCss(laneColor);
     const rgb = getCanvasColorRgb(laneColor);
@@ -118,17 +122,16 @@ export const LaneHeader = memo(function LaneHeader({
   const onLaneTitleChange = useCallback(
     (str: string) => {
       const { title, maxItems } = parseLaneTitle(str);
-      boardModifiers.updateLane(
-        lanePath,
-        update(lane, {
+      stateManager.setState((board) => {
+        return updateEntity(board, lanePath, {
           data: {
             title: { $set: title },
             maxItems: { $set: maxItems },
           },
-        })
-      );
+        });
+      });
     },
-    [boardModifiers, lane, lanePath]
+    [lanePath, stateManager]
   );
 
   const onDoubleClick = useCallback(
@@ -178,6 +181,13 @@ export const LaneHeader = memo(function LaneHeader({
           settingsMenu={settingsMenu}
         />
       </div>
+
+      {showStackDebug && (
+        <div className={c('lane-stack-debug')}>
+          {laneIndex}: {getLaneStackId(lane)}
+          {lane.data.color ? ` | ${lane.data.color}` : ''}
+        </div>
+      )}
 
       <LaneSettings editState={editState} lane={lane} lanePath={lanePath} />
 

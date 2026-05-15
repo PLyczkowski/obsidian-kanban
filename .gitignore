@@ -16,3 +16,4 @@ test-vault/
 main.js
 styles.css
 deploy-plugin.local.json
+AGENTS.md
