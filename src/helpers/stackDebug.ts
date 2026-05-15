@@ -5,9 +5,9 @@ const debugKey = 'kanban-stack-debug';
 
 export function isStackDebugEnabled() {
   try {
-    return activeWindow?.localStorage?.getItem(debugKey) !== '0';
+    return activeWindow?.localStorage?.getItem(debugKey) === '1';
   } catch {
-    return true;
+    return false;
   }
 }
 

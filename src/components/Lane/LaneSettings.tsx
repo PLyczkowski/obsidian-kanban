@@ -1,4 +1,5 @@
 import update from 'immutability-helper';
+import { CSSProperties } from 'preact/compat';
 import { useContext, useEffect, useState } from 'preact/compat';
 import { updateEntity } from 'src/dnd/util/data';
 import { Path } from 'src/dnd/types';
@@ -99,7 +100,9 @@ export function LaneSettings({ lane, lanePath, editState }: LaneSettingsProps) {
               style={{
                 '--kanban-lane-color': getCanvasColorCss(color),
                 '--kanban-lane-color-rgb': getCanvasColorRgb(color),
-              }}
+                backgroundColor: getCanvasColorCss(color),
+                borderColor: getCanvasColorCss(color),
+              } as CSSProperties}
               onClick={() => setLaneColor(color)}
             />
           ))}
